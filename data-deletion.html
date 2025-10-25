@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Deletion Request - History Today</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📚</div>
+            <h1>Data Deletion Request</h1>
+            <p class="subtitle">History Today App</p>
+        </div>
+
+        <div class="info-box">
+            <h3>What data will be deleted?</h3>
+            <ul>
+                <li>Your comments and replies</li>
+                <li>Your likes and dislikes</li>
+                <li>Your bookmarks</li>
+                <li>Events you created (anonymized)</li>
+            </ul>
+            <p style="margin-top: 10px; color: #d9534f; font-weight: bold;">
+                ⚠️ This action cannot be undone. Your account will remain active.
+            </p>
+        </div>
+
+        <form id="deletionForm">
+            <div class="form-group">
+                <label for="email">Email Address*</label>
+                <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="dataType">What would you like to delete?*</label>
+                <select id="dataType" name="dataType" required>
+                    <option value="all">All my data (recommended)</option>
+                    <option value="events">Only my events</option>
+                    <option value="comments">Only my comments</option>
+                    <option value="likes">Only my likes/dislikes</option>
+                    <option value="bookmarks">Only my bookmarks</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="reason">Reason (Optional)</label>
+                <input type="text" id="reason" name="reason" placeholder="Why are you deleting your data?">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="confirm" name="confirm" required>
+                <label for="confirm" style="font-weight: normal; margin-bottom: 0;">
+                    I understand this action is permanent and cannot be undone
+                </label>
+            </div>
+
+            <button type="submit" id="submitBtn">Request Data Deletion</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Processing your request...</p>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="footer">
+            <p>Need help? <a href="mailto:support@historytoday.com">Contact Support</a></p>
+            <p style="margin-top: 10px;">
+                <a href="privacy-policy.html">Privacy Policy</a> | 
+                <a href="terms.html">Terms of Service</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('deletionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const message = document.getElementById('message');
+
+        // Replace with your actual API URL
+        const API_URL = 'https://history-app-api.onrender.com/api';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const dataType = document.getElementById('dataType').value;
+            const reason = document.getElementById('reason').value;
+            const confirmed = document.getElementById('confirm').checked;
+
+            if (!confirmed) {
+                showMessage('Please confirm that you understand this action is permanent.', 'error');
+                return;
+            }
+
+            // Disable form
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            message.style.display = 'none';
+
+            try {
+                // First, get user ID from email
+                const loginResponse = await fetch(`${API_URL}/get_user_by_email.php?email=${encodeURIComponent(email)}`);
+                
+                if (!loginResponse.ok) {
+                    throw new Error('User not found. Please check your email address.');
+                }
+
+                const userData = await loginResponse.json();
+                const userId = userData.user_id;
+
+                // Now request data deletion
+                const deleteResponse = await fetch(`${API_URL}/delete_data.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        data_type: dataType,
+                        reason: reason
+                    })
+                });
+
+                const result = await deleteResponse.json();
+
+                if (result.success) {
+                    showMessage('✅ Your data deletion request has been processed successfully. It may take up to 24 hours to complete.', 'success');
+                    form.reset();
+                } else {
+                    throw new Error(result.message || 'Failed to process deletion request');
+                }
+
+            } catch (error) {
+                showMessage('❌ ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 10000);
+            }
+        }
+    </script>
+</body>
+</html>
