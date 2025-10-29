@@ -138,10 +138,12 @@
 
         .screenshot {
             width: 250px;
-            height: 500px;
-            background: #e0e0e0;
+            height: auto;
+            max-height: 500px;
+            object-fit: contain;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 3px solid #667eea;
         }
 
         .about {
@@ -237,10 +239,10 @@
             <p style="font-size: 1em; opacity: 0.8;">A community-driven educational platform for history enthusiasts</p>
             
             <div class="download-buttons">
-                <a href="#" class="btn">
+                <a href="https://history-today.en.aptoide.com/" target="_blank" class="btn">
                     📱 Download on Aptoide
                 </a>
-                <a href="#" class="btn btn-secondary">
+                <a href="#features" class="btn btn-secondary">
                     🛍️ Coming to Amazon
                 </a>
             </div>
@@ -317,14 +319,16 @@
             <p style="color: #666; margin-bottom: 30px;">Experience the beautiful, intuitive interface</p>
             
             <div class="screenshot-grid">
-                <div class="screenshot" style="background: url('C:\Users\hovep\history_today_new\store_assets\screenshots\screenshot_1_home.jpg') center/cover no-repeat;"></div>
-                <div class="screenshot" style="background: url('C:\Users\hovep\history_today_new\store_assets\screenshots\screenshot_2_event_detail.jpg') center/cover no-repeat;"></div>
-                <div class="screenshot" style="background: url('C:\Users\hovep\history_today_new\store_assets\screenshots\screenshot_3_event_detail.jpg') center/cover no-repeat;"></div>
-                <div class="screenshot" style="background: url('C:\Users\hovep\history_today_new\store_assets\screenshots\screenshot_4_dark_mode.jpg') center/cover no-repeat;"></div>
-                <div class="screenshot" style="background: url('C:\Users\hovep\history_today_new\store_assets\screenshots\screenshot_5_search.jpg') center/cover no-repeat;"></div>
-
+                <img src="images/screenshot1.png" alt="Home Screen" class="screenshot" onerror="this.style.display='none'">
+                <img src="images/screenshot2.png" alt="Event Detail" class="screenshot" onerror="this.style.display='none'">
+                <img src="images/screenshot3.png" alt="Profile" class="screenshot" onerror="this.style.display='none'">
+                <img src="images/screenshot4.png" alt="Profile" class="screenshot" onerror="this.style.display='none'">
+                <img src="images/screenshot5.png" alt="Profile" class="screenshot" onerror="this.style.display='none'">
             </div>
-
+            
+            <p style="margin-top: 30px; color: #999; font-size: 0.9em;">
+                Screenshots from History Today mobile app
+            </p>
         </div>
     </div>
 
