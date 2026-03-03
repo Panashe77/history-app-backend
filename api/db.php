@@ -6,6 +6,11 @@ $database = getenv('DB_NAME') ?: 'history_app';
 $port = getenv('DB_PORT') ?: 3306;
 
 $conn = new mysqli($host, $user, $password, $database, $port);
+
+// PlanetScale requires SSL
+$conn->ssl_set(NULL, NULL, NULL, NULL, NULL);
+$conn->real_connect($host, $user, $password, $database, $port, NULL, MYSQLI_CLIENT_SSL);
+
 $conn->set_charset("utf8mb4");
 
 if ($conn->connect_error) {
