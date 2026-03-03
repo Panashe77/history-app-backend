@@ -3,11 +3,9 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
-
 include 'db.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
-
 $username = $data['username'] ?? '';
 $email = $data['email'] ?? '';
 $password = $data['password'] ?? '';
@@ -19,13 +17,9 @@ if (empty($username) || empty($email) || empty($password)) {
 }
 
 // Check if user already exists
-$sql = "SELECT id FROM users WHERE username = ? OR email = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("ss", $username, $email);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows > 0) {
+$stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+$stmt->execute([$username, $email]);
+if ($stmt->rowCount() > 0) {
     http_response_code(409);
     echo json_encode(["status" => "error", "message" => "Username or email already exists"]);
     exit;
@@ -33,23 +27,15 @@ if ($result->num_rows > 0) {
 
 // Hash password and create user
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
-$sql = "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("sss", $username, $email, $password_hash);
+$stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?) RETURNING id");
+$stmt->execute([$username, $email, $password_hash]);
+$row = $stmt->fetch();
+$user_id = $row['id'];
 
-if ($stmt->execute()) {
-    $user_id = $conn->insert_id;
-    echo json_encode([
-        "status" => "success",
-        "user_id" => $user_id,
-        "username" => $username,
-        "email" => $email
-    ]);
-} else {
-    http_response_code(500);
-    echo json_encode(["status" => "error", "message" => "Failed to create user"]);
-}
-
-$stmt->close();
-$conn->close();
+echo json_encode([
+    "status" => "success",
+    "user_id" => $user_id,
+    "username" => $username,
+    "email" => $email
+]);
 ?>
