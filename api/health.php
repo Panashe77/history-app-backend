@@ -10,10 +10,11 @@ $response = [
 
 try {
     include 'db.php';
+    $pdo->query("SELECT 1");
     $response['database'] = 'connected';
-    $conn->close();
 } catch (Exception $e) {
     $response['database'] = 'disconnected';
+    $response['error'] = $e->getMessage();
 }
 
 echo json_encode($response);
