@@ -3,7 +3,6 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
-
 include 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -17,54 +16,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    $conn->begin_transaction();
-
     try {
+        $pdo->beginTransaction();
         $deleted = [];
 
         switch ($data_type) {
             case 'events':
-                $conn->query("DELETE FROM events WHERE user_id = $user_id");
+                $pdo->prepare("DELETE FROM events WHERE user_id = ?")->execute([$user_id]);
                 $deleted[] = 'events';
                 break;
-
             case 'comments':
-                $conn->query("DELETE FROM comments WHERE user_id = $user_id");
+                $pdo->prepare("DELETE FROM comments WHERE user_id = ?")->execute([$user_id]);
                 $deleted[] = 'comments';
                 break;
-
             case 'likes':
-                $conn->query("DELETE FROM event_likes WHERE user_id = $user_id");
-                $conn->query("DELETE FROM comment_likes WHERE user_id = $user_id");
+                $pdo->prepare("DELETE FROM event_likes WHERE user_id = ?")->execute([$user_id]);
+                $pdo->prepare("DELETE FROM comment_likes WHERE user_id = ?")->execute([$user_id]);
                 $deleted[] = 'likes and reactions';
                 break;
-
             case 'bookmarks':
-                $conn->query("DELETE FROM bookmarks WHERE user_id = $user_id");
+                $pdo->prepare("DELETE FROM bookmarks WHERE user_id = ?")->execute([$user_id]);
                 $deleted[] = 'bookmarks';
                 break;
-
             case 'all':
             default:
-                $conn->query("DELETE FROM comment_likes WHERE user_id = $user_id");
-                $conn->query("DELETE FROM event_likes WHERE user_id = $user_id");
-                $conn->query("DELETE FROM bookmarks WHERE user_id = $user_id");
-                $conn->query("DELETE FROM comments WHERE user_id = $user_id");
-                $conn->query("UPDATE events SET user_id = NULL WHERE user_id = $user_id");
+                $pdo->prepare("DELETE FROM comment_likes WHERE user_id = ?")->execute([$user_id]);
+                $pdo->prepare("DELETE FROM event_likes WHERE user_id = ?")->execute([$user_id]);
+                $pdo->prepare("DELETE FROM bookmarks WHERE user_id = ?")->execute([$user_id]);
+                $pdo->prepare("DELETE FROM comments WHERE user_id = ?")->execute([$user_id]);
+                $pdo->prepare("UPDATE events SET user_id = NULL WHERE user_id = ?")->execute([$user_id]);
                 $deleted[] = 'all user data';
                 break;
         }
 
-        $conn->commit();
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'Data deleted successfully',
-            'deleted' => $deleted
-        ]);
-
+        $pdo->commit();
+        echo json_encode(['success' => true, 'message' => 'Data deleted successfully', 'deleted' => $deleted]);
     } catch (Exception $e) {
-        $conn->rollback();
+        $pdo->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Failed to delete data']);
     }
@@ -72,6 +60,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
 }
-
-$conn->close();
 ?>
