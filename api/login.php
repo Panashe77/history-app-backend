@@ -3,7 +3,6 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
-
 include 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -17,13 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    $sql = "SELECT id, username, email, password_hash FROM users WHERE email = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt = $pdo->prepare("SELECT id, username, email, password_hash FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
 
-    if ($user = $result->fetch_assoc()) {
+    if ($user) {
         if (password_verify($password, $user['password_hash'])) {
             echo json_encode([
                 "status" => "success",
@@ -39,12 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         http_response_code(404);
         echo json_encode(["status" => "error", "message" => "User not found"]);
     }
-
-    $stmt->close();
 } else {
     http_response_code(405);
     echo json_encode(["status" => "error", "message" => "Method not allowed"]);
 }
-
-$conn->close();
 ?>
