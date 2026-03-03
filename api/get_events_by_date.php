@@ -1,28 +1,25 @@
 <?php
-// ✅ CORS headers for Flutter Web
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: GET");
 header('Content-Type: application/json');
-
 include 'db.php';
 
-$date = $_GET['date']; // Expected format: YYYY-MM-DD
+$date = $_GET['date'] ?? '';
+if (empty($date)) {
+    echo json_encode([]);
+    exit;
+}
 
-// Extract month and day from the input date
-$month = date('n', strtotime($date)); // n = 1-12 without leading zeros
-$day = date('j', strtotime($date));   // j = 1-31 without leading zeros
+$month = date('n', strtotime($date));
+$day = date('j', strtotime($date));
 
-// ✅ Query for historical events that happened on the same month and day (ignoring year)
-$sql = "SELECT * FROM events WHERE MONTH(date) = ? AND DAY(date) = ? ORDER BY year ASC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("ii", $month, $day);
-$stmt->execute();
-$result = $stmt->get_result();
+// PostgreSQL uses EXTRACT instead of MONTH()/DAY()
+$stmt = $pdo->prepare("SELECT * FROM events WHERE EXTRACT(MONTH FROM date) = ? AND EXTRACT(DAY FROM date) = ? ORDER BY year ASC");
+$stmt->execute([$month, $day]);
 
 $events = [];
-while ($row = $result->fetch_assoc()) {
-    // ✅ Ensure consistent data types for Flutter
+while ($row = $stmt->fetch()) {
     $row['id'] = (int)$row['id'];
     $row['year'] = (int)$row['year'];
     $row['likes'] = (int)$row['likes'];
