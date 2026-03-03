@@ -1,9 +1,8 @@
 FROM php:8.1-apache
-RUN docker-php-ext-install pdo pdo_mysql mysqli
 RUN apt-get update && apt-get install -y \
     libpng-dev libjpeg-dev libfreetype6-dev libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo_pgsql pgsql
+    && docker-php-ext-install gd pdo pdo_pgsql pgsql
 RUN a2enmod rewrite headers
 COPY . /var/www/html/
 RUN mkdir -p /var/www/html/uploads && \
