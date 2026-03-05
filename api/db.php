@@ -1,4 +1,5 @@
 <?php
+ob_start();
 $host = getenv('DB_HOST') ?: 'localhost';
 $user = getenv('DB_USER') ?: 'postgres';
 $password = getenv('DB_PASSWORD') ?: '';
@@ -7,7 +8,7 @@ $port = getenv('DB_PORT') ?: 5432;
 
 try {
     $pdo = new PDO(
-        "pgsql:host=$host;port=$port;dbname=$database;sslmode=require",
+        "pgsql:host=$host;port=$port;dbname=$database;sslmode=disable",
         $user,
         $password,
         [
@@ -16,6 +17,7 @@ try {
         ]
     );
 } catch (PDOException $e) {
+    ob_clean();
     error_log("Database connection failed: " . $e->getMessage());
     http_response_code(503);
     header('Content-Type: application/json');
