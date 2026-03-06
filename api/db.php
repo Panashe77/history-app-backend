@@ -1,5 +1,9 @@
 <?php
 ob_start();
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+error_reporting(E_ALL);
+
 $host = getenv('DB_HOST') ?: 'localhost';
 $user = getenv('DB_USER') ?: 'postgres';
 $password = getenv('DB_PASSWORD') ?: '';
@@ -8,7 +12,7 @@ $port = getenv('DB_PORT') ?: 5432;
 
 try {
     $pdo = new PDO(
-        "pgsql:host=$host;port=$port;dbname=$database;sslmode=disable",
+        "pgsql:host=$host;port=$port;dbname=$database;sslmode=require",
         $user,
         $password,
         [
