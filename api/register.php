@@ -48,19 +48,16 @@ try {
         exit;
     }
 
-    // Hash password and insert
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-    $stmt->execute([$username, $email, $password_hash]);
+    // Hash password and insert — column is 'password' not 'password_hash'
+    $hashed = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+    $stmt->execute([$username, $email, $hashed]);
 
-    // lastInsertId() can be unreliable with pgsql driver - fetch manually as fallback
-    $user_id = $pdo->lastInsertId();
-    if (empty($user_id)) {
-        $stmt2 = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt2->execute([$email]);
-        $row = $stmt2->fetch();
-        $user_id = $row['id'] ?? 0;
-    }
+    // Fetch the new user's id (lastInsertId unreliable with pgsql driver)
+    $stmt2 = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt2->execute([$email]);
+    $row = $stmt2->fetch();
+    $user_id = $row['id'] ?? 0;
 
     ob_clean();
     echo json_encode([
