@@ -9,7 +9,6 @@ header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
 
-// Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     ob_clean();
@@ -18,48 +17,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 include 'db.php';
 
-$data = json_decode(file_get_contents("php://input"), true);
+try {
+    $data = json_decode(file_get_contents("php://input"), true);
 
-if (json_last_error() !== JSON_ERROR_NONE) {
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        ob_clean();
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "Invalid JSON body"]);
+        exit;
+    }
+
+    $username = trim($data['username'] ?? '');
+    $email    = trim($data['email']    ?? '');
+    $password = $data['password']      ?? '';
+
+    if (empty($username) || empty($email) || empty($password)) {
+        ob_clean();
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "All fields are required"]);
+        exit;
+    }
+
+    // Check if user already exists
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+    $stmt->execute([$username, $email]);
+    if ($stmt->rowCount() > 0) {
+        ob_clean();
+        http_response_code(409);
+        echo json_encode(["status" => "error", "message" => "Username or email already exists"]);
+        exit;
+    }
+
+    // Hash password and insert
+    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
+    $stmt->execute([$username, $email, $password_hash]);
+
+    // lastInsertId() can be unreliable with pgsql driver - fetch manually as fallback
+    $user_id = $pdo->lastInsertId();
+    if (empty($user_id)) {
+        $stmt2 = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt2->execute([$email]);
+        $row = $stmt2->fetch();
+        $user_id = $row['id'] ?? 0;
+    }
+
     ob_clean();
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Invalid JSON body"]);
-    exit;
-}
+    echo json_encode([
+        "status"   => "success",
+        "user_id"  => (int)$user_id,
+        "username" => $username,
+        "email"    => $email
+    ]);
 
-$username = $data['username'] ?? '';
-$email    = $data['email']    ?? '';
-$password = $data['password'] ?? '';
-
-if (empty($username) || empty($email) || empty($password)) {
+} catch (Exception $e) {
+    error_log("Register error: " . $e->getMessage());
     ob_clean();
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "All fields are required"]);
-    exit;
+    http_response_code(500);
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Registration failed: " . $e->getMessage()
+    ]);
 }
-
-// Check if user already exists
-$stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
-$stmt->execute([$username, $email]);
-if ($stmt->rowCount() > 0) {
-    ob_clean();
-    http_response_code(409);
-    echo json_encode(["status" => "error", "message" => "Username or email already exists"]);
-    exit;
-}
-
-// Hash password and create user
-$password_hash = password_hash($password, PASSWORD_DEFAULT);
-$stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?) RETURNING id");
-$stmt->execute([$username, $email, $password_hash]);
-$row = $stmt->fetch();
-$user_id = $row['id'];
-
-ob_clean();
-echo json_encode([
-    "status"   => "success",
-    "user_id"  => $user_id,
-    "username" => $username,
-    "email"    => $email
-]);
 ?>
