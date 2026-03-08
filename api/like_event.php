@@ -16,22 +16,22 @@ try {
         echo json_encode(['success' => false, 'message' => 'Missing event_id or user_id']);
         exit;
     }
-    // Schema uses 'like_type' column in event_likes
-    $check = $pdo->prepare("SELECT like_type FROM event_likes WHERE event_id = ? AND user_id = ?");
+    // Supabase schema: event_likes uses 'type' column (not 'like_type')
+    $check = $pdo->prepare("SELECT type FROM event_likes WHERE event_id = ? AND user_id = ?");
     $check->execute([$event_id, $user_id]);
     $existing = $check->fetch();
     if ($existing) {
-        if ($existing['like_type'] === 'like') {
+        if ($existing['type'] === 'like') {
             $pdo->prepare("DELETE FROM event_likes WHERE event_id = ? AND user_id = ?")->execute([$event_id, $user_id]);
             $pdo->prepare("UPDATE events SET likes = GREATEST(0, likes - 1) WHERE id = ?")->execute([$event_id]);
             ob_clean(); echo json_encode(['success' => true, 'action' => 'removed_like']);
         } else {
-            $pdo->prepare("UPDATE event_likes SET like_type = 'like' WHERE event_id = ? AND user_id = ?")->execute([$event_id, $user_id]);
+            $pdo->prepare("UPDATE event_likes SET type = 'like' WHERE event_id = ? AND user_id = ?")->execute([$event_id, $user_id]);
             $pdo->prepare("UPDATE events SET likes = likes + 1, dislikes = GREATEST(0, dislikes - 1) WHERE id = ?")->execute([$event_id]);
             ob_clean(); echo json_encode(['success' => true, 'action' => 'changed_to_like']);
         }
     } else {
-        $pdo->prepare("INSERT INTO event_likes (event_id, user_id, like_type) VALUES (?, ?, 'like')")->execute([$event_id, $user_id]);
+        $pdo->prepare("INSERT INTO event_likes (event_id, user_id, type) VALUES (?, ?, 'like')")->execute([$event_id, $user_id]);
         $pdo->prepare("UPDATE events SET likes = likes + 1 WHERE id = ?")->execute([$event_id]);
         ob_clean(); echo json_encode(['success' => true, 'action' => 'added_like']);
     }
