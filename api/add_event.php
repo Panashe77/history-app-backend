@@ -17,40 +17,47 @@ try {
     $tags        = trim($_POST['tags']         ?? '');
     $user_id     = intval($_POST['user_id']    ?? 0);
 
+    error_log("ADD_EVENT: title=$title date=$date user_id=$user_id");
+    error_log("ADD_EVENT: FILES=" . json_encode(array_map(fn($f) => ['name'=>$f['name'],'size'=>$f['size'],'error'=>$f['error']], $_FILES)));
+
     if (empty($title) || empty($description) || empty($date)) {
         ob_clean(); http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Title, description and date are required']);
         exit;
     }
 
-    // Parse month and day from date
     $dateObj = DateTime::createFromFormat('Y-m-d', $date);
     if (!$dateObj) {
         ob_clean(); http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Invalid date format, expected YYYY-MM-DD']);
         exit;
     }
-    $month = $dateObj->format('n'); // no leading zero
-    $day   = $dateObj->format('j'); // no leading zero
+    $month = $dateObj->format('n');
+    $day   = $dateObj->format('j');
 
     $image_url = null;
 
-    // Handle image upload - store in Supabase Storage via REST API
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $supabase_url    = getenv('SUPABASE_URL');
-        $supabase_key    = getenv('SUPABASE_SERVICE_KEY');
-        $bucket          = 'event-images';
+        $supabase_url = getenv('SUPABASE_URL');
+        $supabase_key = getenv('SUPABASE_SERVICE_KEY');
+        $bucket       = 'event-images';
 
-        $file_tmp  = $_FILES['image']['tmp_name'];
-        $file_name = $_FILES['image']['name'];
-        $file_type = $_FILES['image']['type'];
+        error_log("ADD_EVENT: SUPABASE_URL=" . ($supabase_url ? 'SET' : 'NOT SET'));
+        error_log("ADD_EVENT: SUPABASE_SERVICE_KEY=" . ($supabase_key ? 'SET' : 'NOT SET'));
+
+        $file_tmp    = $_FILES['image']['tmp_name'];
+        $file_name   = $_FILES['image']['name'];
+        $file_type   = $_FILES['image']['type'];
+        $file_size   = $_FILES['image']['size'];
         $unique_name = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file_name);
 
-        if (!empty($supabase_url) && !empty($supabase_key)) {
-            // Upload to Supabase Storage
-            $upload_url = "$supabase_url/storage/v1/object/$bucket/$unique_name";
-            $file_data  = file_get_contents($file_tmp);
+        error_log("ADD_EVENT: Image file=$file_name size=$file_size type=$file_type");
 
+        if (!empty($supabase_url) && !empty($supabase_key)) {
+            $upload_url = "$supabase_url/storage/v1/object/$bucket/$unique_name";
+            error_log("ADD_EVENT: Uploading to Supabase: $upload_url");
+
+            $file_data = file_get_contents($file_tmp);
             $ch = curl_init($upload_url);
             curl_setopt_array($ch, [
                 CURLOPT_CUSTOMREQUEST  => 'POST',
@@ -62,33 +69,40 @@ try {
                     "x-upsert: true",
                 ],
             ]);
-            $result = curl_exec($ch);
+            $result    = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_err  = curl_error($ch);
             curl_close($ch);
 
+            error_log("ADD_EVENT: Supabase response code=$http_code result=$result curl_err=$curl_err");
+
             if ($http_code === 200 || $http_code === 201) {
-                // Public URL format for Supabase Storage
                 $image_url = "$supabase_url/storage/v1/object/public/$bucket/$unique_name";
+                error_log("ADD_EVENT: ✅ Supabase upload success, image_url=$image_url");
             } else {
-                error_log("Supabase upload failed ($http_code): $result");
-                // Fall back to local storage
+                error_log("ADD_EVENT: ❌ Supabase upload FAILED ($http_code): $result — falling back to local");
                 $upload_dir = __DIR__ . '/uploads/';
                 if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-                $local_path = $upload_dir . $unique_name;
-                if (move_uploaded_file($file_tmp, $local_path)) {
+                if (move_uploaded_file($file_tmp, $upload_dir . $unique_name)) {
                     $image_url = 'api/uploads/' . $unique_name;
+                    error_log("ADD_EVENT: Local fallback image_url=$image_url");
                 }
             }
         } else {
-            // No Supabase env vars - use local storage
+            error_log("ADD_EVENT: ❌ Supabase env vars missing — using local storage");
             $upload_dir = __DIR__ . '/uploads/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-            $local_path = $upload_dir . $unique_name;
-            if (move_uploaded_file($file_tmp, $local_path)) {
+            if (move_uploaded_file($file_tmp, $upload_dir . $unique_name)) {
                 $image_url = 'api/uploads/' . $unique_name;
+                error_log("ADD_EVENT: Local fallback image_url=$image_url");
             }
         }
+    } else {
+        $file_error = $_FILES['image']['error'] ?? 'no file';
+        error_log("ADD_EVENT: No image uploaded or error. FILES error=$file_error");
     }
+
+    error_log("ADD_EVENT: Inserting event with image_url=$image_url");
 
     $stmt = $pdo->prepare("
         INSERT INTO events (title, description, year, date, image_url, tags, month, day, user_id)
@@ -104,15 +118,23 @@ try {
         $event_id = $row['id'] ?? 0;
     }
 
+    error_log("ADD_EVENT: ✅ Event inserted id=$event_id image_url=$image_url");
+
     ob_clean();
     echo json_encode([
         'status'    => 'success',
         'event_id'  => (int)$event_id,
         'image_url' => $image_url,
+        'debug'     => [
+            'supabase_url_set'  => !empty(getenv('SUPABASE_URL')),
+            'supabase_key_set'  => !empty(getenv('SUPABASE_SERVICE_KEY')),
+            'image_uploaded'    => $image_url !== null,
+            'storage_used'      => $image_url && str_contains($image_url, 'supabase') ? 'supabase' : 'local',
+        ],
     ]);
 
 } catch (Exception $e) {
-    error_log("add_event error: " . $e->getMessage());
+    error_log("ADD_EVENT: Exception: " . $e->getMessage());
     ob_clean(); http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'add_event failed: ' . $e->getMessage()]);
 }
